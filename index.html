@@ -1,0 +1,616 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#ffffff">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="헬스로그">
+  <title>헬스로그</title>
+  <link rel="manifest" href="manifest.json">
+  <style>
+    :root{
+      --bg:#f7f8fb;
+      --card:#ffffff;
+      --line:#e8ebf1;
+      --text:#151821;
+      --sub:#7b8290;
+      --navy:#132f63;
+      --navy-soft:#eef4ff;
+      --purple:#7d5cff;
+      --purple-soft:#f4f0ff;
+      --green:#38b98c;
+      --green-soft:#eefbf6;
+      --orange:#f39c44;
+      --orange-soft:#fff7ec;
+      --shadow:0 10px 24px rgba(25,40,76,.06);
+    }
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      background:var(--bg);
+      color:var(--text);
+      font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans KR",Roboto,sans-serif;
+    }
+    button,input,select{font:inherit}
+    button{cursor:pointer}
+    .app{
+      width:100%;
+      max-width:520px;
+      min-height:100vh;
+      margin:0 auto;
+      background:#fff;
+      position:relative;
+      padding-bottom:82px;
+      box-shadow:0 0 40px rgba(20,32,58,.06);
+    }
+    header{
+      position:sticky;
+      top:0;
+      z-index:20;
+      background:rgba(255,255,255,.96);
+      backdrop-filter:blur(12px);
+      border-bottom:1px solid var(--line);
+      padding:18px 18px 14px;
+    }
+    .topline{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    h1{margin:0;font-size:22px;letter-spacing:-.04em}
+    .subline{margin-top:4px;font-size:12px;color:var(--sub)}
+    .icon-btn{
+      width:40px;height:40px;border:0;border-radius:12px;
+      background:var(--navy);color:#fff;font-size:25px;line-height:1;
+    }
+    main{padding:16px;background:var(--bg);min-height:calc(100vh - 140px)}
+    .page{display:none}
+    .page.active{display:block}
+    .card{
+      background:var(--card);
+      border:1px solid var(--line);
+      border-radius:18px;
+      box-shadow:var(--shadow);
+      margin-bottom:12px;
+    }
+    .section-title{
+      margin:4px 2px 10px;
+      font-size:14px;
+      font-weight:800;
+      color:#2f3440;
+    }
+
+    /* Home */
+    .program{
+      padding:14px;
+      display:grid;
+      grid-template-columns:54px 1fr auto;
+      gap:12px;
+      align-items:center;
+    }
+    .program + .program{margin-top:0}
+    .program-icon{
+      width:54px;height:54px;border-radius:16px;
+      display:grid;place-items:center;
+      font-size:26px;
+    }
+    .c1{background:var(--purple-soft)}
+    .c2{background:var(--green-soft)}
+    .c3{background:#fff1ef}
+    .c4{background:var(--orange-soft)}
+    .program-name{font-size:16px;font-weight:800;margin-bottom:5px}
+    .program-meta,.program-last{font-size:12px;color:var(--sub)}
+    .program-last{margin-top:8px;color:#60749b}
+    .chev{color:#8b94a5;font-size:22px;background:none;border:0}
+    .new-program{
+      width:100%;min-height:52px;border:1px dashed #cfd5df;border-radius:16px;
+      background:#fff;color:var(--navy);font-weight:800;margin-top:4px;
+    }
+
+    /* Calendar */
+    .calendar-card{padding:14px}
+    .cal-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+    .cal-title{font-weight:800}
+    .cal-nav{border:0;background:none;font-size:24px;color:#303744;width:38px;height:38px}
+    .calendar-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:4px}
+    .weekday{text-align:center;font-size:11px;color:#9ca3af;padding:6px 0}
+    .day{
+      position:relative;min-height:38px;border:0;border-radius:12px;background:transparent;
+      font-size:13px;color:#394050;
+    }
+    .day.has{background:#eef4ff;color:#214f9d;font-weight:800}
+    .day.selected{background:var(--navy);color:#fff}
+    .dot{position:absolute;bottom:4px;left:50%;transform:translateX(-50%);width:4px;height:4px;border-radius:50%;background:#5e84d6}
+    .day.selected .dot{background:#fff}
+    .record-card{padding:14px}
+    .record-head{display:flex;justify-content:space-between;gap:10px;align-items:center;margin-bottom:12px}
+    .record-date{font-weight:800}
+    .record-program{font-size:13px;color:var(--purple);font-weight:800}
+    .record-exercise{padding:11px 0;border-top:1px solid #f0f1f4}
+    .record-exercise:first-of-type{border-top:0}
+    .record-line{display:flex;justify-content:space-between;gap:8px;font-size:13px;margin-bottom:4px}
+    .set-details{font-size:12px;color:var(--sub);line-height:1.7}
+
+    /* Workout */
+    .date-row,.program-select-wrap{
+      background:#fff;border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin-bottom:10px
+    }
+    .date-row{display:flex;justify-content:space-between;align-items:center;font-size:13px}
+    .label{color:var(--sub)}
+    .program-select-wrap label{display:block;font-size:12px;color:var(--sub);margin-bottom:7px}
+    select{
+      width:100%;border:0;background:#fff;font-size:15px;font-weight:800;outline:none;
+    }
+    .hint{
+      background:#f7fbff;border:1px solid #cfe2ff;color:#315a90;
+      border-radius:14px;padding:11px 12px;font-size:12px;margin-bottom:10px
+    }
+    .summary{
+      background:#f5f8ff;border-radius:14px 14px 0 0;
+      padding:10px 12px;font-size:12px;font-weight:800;color:#405476
+    }
+    .exercise-box{
+      border:1px solid var(--line);background:#fff;border-radius:16px;overflow:hidden;margin-bottom:10px
+    }
+    .exercise-title{
+      padding:12px 13px;border-bottom:1px solid var(--line);
+      display:flex;align-items:center;justify-content:space-between;gap:10px
+    }
+    .exercise-title h3{font-size:14px;margin:0}
+    .exercise-title button{border:0;background:none;color:#64748b;font-size:18px}
+    .set-table{width:100%;border-collapse:collapse;table-layout:fixed}
+    .set-table th,.set-table td{
+      border-right:1px solid #edf0f4;border-bottom:1px solid #edf0f4;
+      text-align:center;padding:7px 3px;font-size:11px
+    }
+    .set-table th:last-child,.set-table td:last-child{border-right:0}
+    .set-table tr:last-child td{border-bottom:0}
+    .set-table thead th{background:#fafbfc;font-weight:700;color:#4f5664}
+    .set-table .group{font-size:11px}
+    .set-table input{
+      width:100%;min-width:0;border:1px solid #ccd3df;border-radius:8px;
+      padding:7px 2px;text-align:center;font-size:15px;background:#fff
+    }
+    .set-type{font-weight:700;color:#566075}
+    .collapse-body.hidden{display:none}
+    .save-btn{
+      width:100%;min-height:50px;border:0;border-radius:14px;
+      background:var(--navy);color:#fff;font-weight:800;font-size:15px;margin-top:4px
+    }
+
+    /* nav */
+    .bottom-nav{
+      position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:40;
+      width:100%;max-width:520px;background:rgba(255,255,255,.97);
+      border-top:1px solid var(--line);
+      display:grid;grid-template-columns:repeat(3,1fr);
+      padding:7px 8px calc(7px + env(safe-area-inset-bottom));
+      backdrop-filter:blur(12px)
+    }
+    .nav-btn{
+      border:0;background:transparent;min-height:58px;border-radius:13px;color:#9aa2b1;
+      display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;
+      font-size:11px;font-weight:700
+    }
+    .nav-btn .ico{font-size:21px}
+    .nav-btn.active{color:var(--navy);background:#f6f8fc}
+
+    /* modal */
+    .backdrop{
+      display:none;position:fixed;z-index:100;inset:0;background:rgba(14,23,42,.42);
+      align-items:flex-end;justify-content:center;padding:14px
+    }
+    .backdrop.open{display:flex}
+    .modal{
+      width:100%;max-width:520px;max-height:88vh;overflow:auto;background:#fff;
+      border-radius:22px 22px 14px 14px;padding:18px
+    }
+    .modal h2{margin:0 0 14px;font-size:19px}
+    .field{margin-bottom:12px}
+    .field label{display:block;font-size:12px;font-weight:700;color:#555e70;margin-bottom:6px}
+    .field input{
+      width:100%;min-height:46px;border:1px solid #d8dde6;border-radius:12px;padding:10px 12px;font-size:16px
+    }
+    .builder{
+      border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:9px;background:#fafbfc
+    }
+    .builder-row{display:grid;grid-template-columns:1fr 88px;gap:8px}
+    .btn{
+      border:0;border-radius:12px;min-height:44px;padding:9px 13px;background:var(--navy);color:#fff;font-weight:800
+    }
+    .btn.secondary{background:#fff;color:#333;border:1px solid var(--line)}
+    .btn.danger{background:#fff;color:#cf3a3a;border:1px solid #f3c7c7}
+    .actions{display:flex;gap:8px;margin-top:14px}
+    .actions .btn{flex:1}
+    .empty{padding:28px 16px;text-align:center;color:var(--sub);font-size:13px}
+
+    @media (max-width:380px){
+      main{padding:12px}
+      header{padding:15px 14px 12px}
+      .set-table th,.set-table td{font-size:10px;padding:6px 2px}
+      .set-table input{font-size:14px;padding:6px 1px}
+      .program{grid-template-columns:48px 1fr auto}
+      .program-icon{width:48px;height:48px}
+    }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="topline">
+      <div>
+        <h1 id="pageTitle">홈</h1>
+        <div class="subline" id="pageSub">내 운동 프로그램</div>
+      </div>
+      <button class="icon-btn" id="headerAdd" aria-label="프로그램 추가">+</button>
+    </div>
+  </header>
+
+  <main>
+    <section id="homePage" class="page active">
+      <div class="section-title">내 프로그램</div>
+      <div id="programList"></div>
+      <button id="newProgramBtn" class="new-program">＋ 새 프로그램 만들기</button>
+    </section>
+
+    <section id="recordPage" class="page">
+      <div class="card calendar-card">
+        <div class="cal-head">
+          <button id="prevMonth" class="cal-nav">‹</button>
+          <div id="calTitle" class="cal-title"></div>
+          <button id="nextMonth" class="cal-nav">›</button>
+        </div>
+        <div id="calendarGrid" class="calendar-grid"></div>
+      </div>
+      <div id="recordDetail"></div>
+    </section>
+
+    <section id="workoutPage" class="page">
+      <div class="date-row">
+        <span class="label">오늘 날짜</span>
+        <strong id="todayLabel"></strong>
+      </div>
+      <div class="program-select-wrap">
+        <label for="programSelect">프로그램 선택</label>
+        <select id="programSelect"></select>
+      </div>
+      <div class="hint">최근 2회 기록을 기준으로 오늘의 운동 무게와 횟수를 입력하세요.</div>
+      <div id="workoutArea"></div>
+      <button id="saveWorkout" class="save-btn">오늘 운동 저장</button>
+    </section>
+  </main>
+
+  <nav class="bottom-nav">
+    <button class="nav-btn active" data-tab="home"><span class="ico">⌂</span><span>홈</span></button>
+    <button class="nav-btn" data-tab="record"><span class="ico">▣</span><span>기록</span></button>
+    <button class="nav-btn" data-tab="workout"><span class="ico">▥</span><span>운동</span></button>
+  </nav>
+</div>
+
+<div id="programModal" class="backdrop">
+  <div class="modal">
+    <h2 id="modalTitle">새 프로그램 만들기</h2>
+    <div class="field">
+      <label for="programName">프로그램 이름</label>
+      <input id="programName" placeholder="예: 둔근 프로그램">
+    </div>
+    <div id="builders"></div>
+    <button id="addExercise" class="btn secondary" style="width:100%">＋ 운동 추가</button>
+    <div class="actions">
+      <button id="cancelModal" class="btn secondary">취소</button>
+      <button id="saveProgram" class="btn">저장</button>
+    </div>
+  </div>
+</div>
+
+<script>
+const KEY='healthlog_ui_v2';
+
+const defaults={
+  programs:[
+    {id:'p1',name:'둔근 프로그램',icon:'◒',color:'c1',exercises:[
+      {id:'e1',name:'바벨 힙쓰러스트',sets:[{type:'워밍업'},{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e2',name:'레그프레스',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e3',name:'레그 익스텐션',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'드롭'}]}
+    ]},
+    {id:'p2',name:'어깨·등 프로그램',icon:'♧',color:'c2',exercises:[
+      {id:'e4',name:'랫풀다운',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e5',name:'시티드 로우',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e6',name:'숄더프레스',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]}
+    ]},
+    {id:'p3',name:'허벅지 프로그램',icon:'◫',color:'c3',exercises:[
+      {id:'e7',name:'스쿼트',sets:[{type:'워밍업'},{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e8',name:'레그프레스',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e9',name:'레그컬',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]}
+    ]},
+    {id:'p4',name:'상체(가슴/팔) 프로그램',icon:'★',color:'c4',exercises:[
+      {id:'e10',name:'체스트프레스',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e11',name:'케이블 푸시다운',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]}
+    ]}
+  ],
+  records:[]
+};
+
+function clone(v){return JSON.parse(JSON.stringify(v))}
+function load(){
+  try{
+    const raw=localStorage.getItem(KEY);
+    return raw?JSON.parse(raw):clone(defaults);
+  }catch(e){return clone(defaults)}
+}
+let db=load();
+function save(){localStorage.setItem(KEY,JSON.stringify(db))}
+function uid(prefix){return prefix+Date.now().toString(36)+Math.random().toString(36).slice(2,7)}
+function esc(s=''){return String(s).replace(/[&<>"']/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[m]))}
+function isoToday(){
+  const d=new Date();
+  return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+}
+function prettyDate(iso){
+  const [y,m,d]=iso.split('-').map(Number);
+  const w=['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
+  return `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')} (${w})`;
+}
+document.getElementById('todayLabel').textContent=prettyDate(isoToday());
+
+const titles={
+  home:['홈','내 운동 프로그램'],
+  record:['기록','날짜별 운동 기록'],
+  workout:['운동','오늘 운동 진행']
+};
+
+function switchTab(tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById(tab+'Page').classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.tab===tab));
+  document.getElementById('pageTitle').textContent=titles[tab][0];
+  document.getElementById('pageSub').textContent=titles[tab][1];
+  document.getElementById('headerAdd').style.display=tab==='home'?'':'none';
+  if(tab==='home')renderPrograms();
+  if(tab==='record')renderCalendar();
+  if(tab==='workout')renderWorkoutTab();
+}
+document.querySelectorAll('.nav-btn').forEach(b=>b.addEventListener('click',()=>switchTab(b.dataset.tab)));
+
+function lastRecordDate(programId){
+  const r=db.records.filter(x=>x.programId===programId).sort((a,b)=>b.date.localeCompare(a.date))[0];
+  return r?r.date:null;
+}
+function totalSets(p){return p.exercises.reduce((n,e)=>n+e.sets.length,0)}
+
+function renderPrograms(){
+  const root=document.getElementById('programList');
+  root.innerHTML=db.programs.map((p,i)=>`
+    <div class="card program">
+      <div class="program-icon ${p.color||'c1'}">${p.icon||'●'}</div>
+      <div>
+        <div class="program-name">${esc(p.name)}</div>
+        <div class="program-meta">${p.exercises.length}가지 운동 · ${totalSets(p)}세트</div>
+        <div class="program-last">최근 기록 ${lastRecordDate(p.id)||'없음'}</div>
+      </div>
+      <button class="chev open-program" data-id="${p.id}" aria-label="${esc(p.name)} 운동 시작">›</button>
+    </div>
+  `).join('');
+  root.querySelectorAll('.open-program').forEach(b=>b.addEventListener('click',()=>{
+    switchTab('workout');
+    document.getElementById('programSelect').value=b.dataset.id;
+    renderWorkout(b.dataset.id);
+  }));
+}
+
+let editProgramId=null;
+const modal=document.getElementById('programModal');
+function openModal(programId=null){
+  editProgramId=programId;
+  const p=programId?db.programs.find(x=>x.id===programId):null;
+  document.getElementById('modalTitle').textContent=p?'프로그램 수정':'새 프로그램 만들기';
+  document.getElementById('programName').value=p?p.name:'';
+  document.getElementById('builders').innerHTML='';
+  if(p)p.exercises.forEach(e=>addBuilder(e.name,e.sets.map(s=>s.type)));
+  else addBuilder('', ['워킹 1','워킹 2','워킹 3']);
+  modal.classList.add('open');
+}
+function closeModal(){modal.classList.remove('open')}
+function addBuilder(name='',types=['워킹 1','워킹 2','워킹 3']){
+  const el=document.createElement('div');
+  el.className='builder';
+  el.innerHTML=`
+    <div class="builder-row">
+      <div class="field" style="margin:0">
+        <label>운동명</label>
+        <input class="b-name" value="${esc(name)}" placeholder="예: 바벨 힙쓰러스트">
+      </div>
+      <div class="field" style="margin:0">
+        <label>세트 수</label>
+        <input class="b-count" type="number" min="1" max="10" value="${types.length}">
+      </div>
+    </div>
+    <button type="button" class="btn danger remove" style="margin-top:8px;min-height:36px;padding:6px 10px">삭제</button>
+  `;
+  el.querySelector('.remove').addEventListener('click',()=>el.remove());
+  document.getElementById('builders').appendChild(el);
+}
+document.getElementById('headerAdd').addEventListener('click',()=>openModal());
+document.getElementById('newProgramBtn').addEventListener('click',()=>openModal());
+document.getElementById('cancelModal').addEventListener('click',closeModal);
+document.getElementById('addExercise').addEventListener('click',()=>addBuilder());
+modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
+document.getElementById('saveProgram').addEventListener('click',()=>{
+  const name=document.getElementById('programName').value.trim();
+  const rows=[...document.querySelectorAll('.builder')];
+  const exercises=rows.map(row=>{
+    const n=row.querySelector('.b-name').value.trim();
+    const count=Math.max(1,Math.min(10,Number(row.querySelector('.b-count').value)||1));
+    return {id:uid('e'),name:n,sets:Array.from({length:count},(_,i)=>({type:`워킹 ${i+1}`}))}
+  }).filter(e=>e.name);
+  if(!name||!exercises.length){alert('프로그램 이름과 운동을 1개 이상 입력해주세요.');return}
+  if(editProgramId){
+    const p=db.programs.find(x=>x.id===editProgramId);
+    p.name=name;p.exercises=exercises;
+  }else{
+    const colors=['c1','c2','c3','c4'];
+    const icons=['◒','♧','◫','★'];
+    db.programs.push({id:uid('p'),name,color:colors[db.programs.length%4],icon:icons[db.programs.length%4],exercises});
+  }
+  save();closeModal();renderPrograms();
+});
+
+function recentExerciseRecords(programId,exerciseName){
+  const recs=db.records.filter(r=>r.programId===programId).sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
+  const found=[];
+  for(const r of recs){
+    const e=r.exercises.find(x=>x.name===exerciseName);
+    if(e)found.push(e);
+    if(found.length===2)break;
+  }
+  return {prev:found[0]||null,prev2:found[1]||null};
+}
+function setAt(ex,i){return ex&&ex.sets?ex.sets[i]||null:null}
+function val(v){return v===null||v===undefined||v===''?'-':v}
+function renderWorkoutTab(){
+  const sel=document.getElementById('programSelect');
+  const current=sel.value;
+  sel.innerHTML=db.programs.map(p=>`<option value="${p.id}">${esc(p.name)}</option>`).join('');
+  if(current&&db.programs.some(p=>p.id===current))sel.value=current;
+  const id=sel.value||db.programs[0]?.id;
+  renderWorkout(id);
+}
+document.getElementById('programSelect').addEventListener('change',e=>renderWorkout(e.target.value));
+
+function renderWorkout(programId){
+  const p=db.programs.find(x=>x.id===programId);
+  const root=document.getElementById('workoutArea');
+  if(!p){root.innerHTML='<div class="card empty">운동 프로그램을 먼저 만들어주세요.</div>';return}
+  root.innerHTML=`
+    <div class="summary">총 ${p.exercises.length}가지 운동 · ${totalSets(p)}세트</div>
+    ${p.exercises.map((e,ei)=>{
+      const recent=recentExerciseRecords(programId,e.name);
+      return `<div class="exercise-box">
+        <div class="exercise-title">
+          <h3>${ei+1}. ${esc(e.name)}</h3>
+          <button class="toggle" data-ei="${ei}" aria-label="접기">⌃</button>
+        </div>
+        <div class="collapse-body" data-body="${ei}">
+          <table class="set-table">
+            <thead>
+              <tr><th rowspan="2">세트</th><th colspan="3" class="group">무게 (kg)</th><th colspan="3" class="group">횟수 (회)</th></tr>
+              <tr><th>전전</th><th>이전</th><th>오늘</th><th>전전</th><th>이전</th><th>오늘</th></tr>
+            </thead>
+            <tbody>
+              ${e.sets.map((s,si)=>{
+                const p2=setAt(recent.prev2,si),p1=setAt(recent.prev,si);
+                return `<tr>
+                  <td class="set-type">${esc(s.type)}</td>
+                  <td>${val(p2?.weight)}</td>
+                  <td>${val(p1?.weight)}</td>
+                  <td><input class="w-input" type="number" inputmode="decimal" step="0.5" min="0" data-ei="${ei}" data-si="${si}" placeholder="-"></td>
+                  <td>${val(p2?.reps)}</td>
+                  <td>${val(p1?.reps)}</td>
+                  <td><input class="r-input" type="number" inputmode="numeric" step="1" min="0" data-ei="${ei}" data-si="${si}" placeholder="-"></td>
+                </tr>`
+              }).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`
+    }).join('')}
+  `;
+  root.querySelectorAll('.toggle').forEach(b=>b.addEventListener('click',()=>{
+    const body=root.querySelector(`[data-body="${b.dataset.ei}"]`);
+    body.classList.toggle('hidden');
+    b.textContent=body.classList.contains('hidden')?'⌄':'⌃';
+  }));
+}
+
+document.getElementById('saveWorkout').addEventListener('click',()=>{
+  const programId=document.getElementById('programSelect').value;
+  const p=db.programs.find(x=>x.id===programId);
+  if(!p)return;
+  const exercises=p.exercises.map((e,ei)=>({
+    name:e.name,
+    sets:e.sets.map((s,si)=>{
+      const w=document.querySelector(`.w-input[data-ei="${ei}"][data-si="${si}"]`);
+      const r=document.querySelector(`.r-input[data-ei="${ei}"][data-si="${si}"]`);
+      return {
+        type:s.type,
+        weight:w&&w.value!==''?Number(w.value):null,
+        reps:r&&r.value!==''?Math.round(Number(r.value)):null
+      }
+    })
+  }));
+  if(!exercises.some(e=>e.sets.some(s=>s.weight!==null||s.reps!==null))){
+    alert('오늘 운동 기록을 하나 이상 입력해주세요.');return;
+  }
+  db.records.push({
+    id:uid('r'),
+    date:isoToday(),
+    savedAt:new Date().toISOString(),
+    programId:p.id,
+    programName:p.name,
+    exercises
+  });
+  save();
+  alert('오늘 운동 기록을 저장했습니다.');
+  renderWorkout(programId);
+});
+
+let calCursor=new Date();calCursor.setDate(1);
+let selectedDate=isoToday();
+function renderCalendar(){
+  const y=calCursor.getFullYear(),m=calCursor.getMonth();
+  document.getElementById('calTitle').textContent=`${y}년 ${m+1}월`;
+  const root=document.getElementById('calendarGrid');
+  const w=['일','월','화','수','목','금','토'];
+  let html=w.map(x=>`<div class="weekday">${x}</div>`).join('');
+  const first=new Date(y,m,1).getDay();
+  const last=new Date(y,m+1,0).getDate();
+  for(let i=0;i<first;i++)html+='<div></div>';
+  const dates=new Set(db.records.map(r=>r.date));
+  for(let d=1;d<=last;d++){
+    const iso=`${y}-${String(m+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    html+=`<button class="day ${dates.has(iso)?'has':''} ${selectedDate===iso?'selected':''}" data-date="${iso}">
+      ${d}${dates.has(iso)?'<span class="dot"></span>':''}
+    </button>`;
+  }
+  root.innerHTML=html;
+  root.querySelectorAll('.day').forEach(b=>b.addEventListener('click',()=>{
+    selectedDate=b.dataset.date;renderCalendar();
+  }));
+  renderRecordDetail(selectedDate);
+}
+document.getElementById('prevMonth').addEventListener('click',()=>{calCursor.setMonth(calCursor.getMonth()-1);renderCalendar()});
+document.getElementById('nextMonth').addEventListener('click',()=>{calCursor.setMonth(calCursor.getMonth()+1);renderCalendar()});
+
+function renderRecordDetail(date){
+  const root=document.getElementById('recordDetail');
+  const recs=db.records.filter(r=>r.date===date).sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
+  if(!recs.length){root.innerHTML=`<div class="card empty">${prettyDate(date)}<br>운동 기록이 없습니다.</div>`;return}
+  root.innerHTML=recs.map(r=>`
+    <div class="card record-card">
+      <div class="record-head">
+        <div>
+          <div class="record-date">${prettyDate(r.date)}</div>
+          <div class="record-program">${esc(r.programName)}</div>
+        </div>
+      </div>
+      ${r.exercises.map((e,i)=>`
+        <div class="record-exercise">
+          <div class="record-line"><strong>${i+1}. ${esc(e.name)}</strong><span>${e.sets.filter(s=>s.weight!==null||s.reps!==null).length}세트</span></div>
+          <div class="set-details">${e.sets.map(s=>`${esc(s.type)} · ${val(s.weight)}kg × ${val(s.reps)}회`).join('<br>')}</div>
+        </div>`).join('')}
+    </div>
+  `).join('');
+}
+
+renderPrograms();
+renderCalendar();
+
+if('serviceWorker' in navigator){
+  window.addEventListener('load',()=>navigator.serviceWorker.register('./sw.js').catch(()=>{}));
+}
+</script>
+</body>
+</html>
