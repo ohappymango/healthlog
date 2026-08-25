@@ -297,6 +297,10 @@
       <label for="programName">프로그램 이름</label>
       <input id="programName" placeholder="예: 둔근 프로그램">
     </div>
+    <div style="font-size:12px;color:#7b8290;margin:-2px 0 10px">
+      운동은 원하는 만큼 추가할 수 있습니다. 목록에 없는 운동명도 직접 입력할 수 있습니다.
+    </div>
+    <datalist id="exerciseSuggestions"><option value="바벨 힙쓰러스트"></option><option value="레그프레스"></option><option value="레그 익스텐션"></option><option value="레그컬"></option><option value="스쿼트"></option><option value="불가리안 스플릿 스쿼트"></option><option value="런지"></option><option value="루마니안 데드리프트"></option><option value="힙 어브덕션"></option><option value="힙 어덕션"></option><option value="케이블 킥백"></option><option value="스텝업"></option><option value="랫풀다운"></option><option value="시티드 로우"></option><option value="바벨 로우"></option><option value="원암 덤벨 로우"></option><option value="풀업"></option><option value="어시스트 풀업"></option><option value="백 익스텐션"></option><option value="숄더프레스"></option><option value="덤벨 숄더프레스"></option><option value="사이드 레터럴 레이즈"></option><option value="리어 델트 플라이"></option><option value="페이스풀"></option><option value="프론트 레이즈"></option><option value="체스트프레스"></option><option value="벤치프레스"></option><option value="인클라인 덤벨프레스"></option><option value="펙덱 플라이"></option><option value="케이블 푸시다운"></option><option value="덤벨 컬"></option><option value="해머 컬"></option><option value="오버헤드 트라이셉 익스텐션"></option><option value="크런치"></option><option value="레그레이즈"></option><option value="플랭크"></option><option value="케이블 크런치"></option></datalist>
     <div id="builders"></div>
     <button id="addExercise" class="btn secondary" style="width:100%">＋ 운동 추가</button>
     <div class="actions">
@@ -314,7 +318,10 @@ const defaults={
     {id:'p1',name:'둔근 프로그램',icon:'◒',color:'c1',exercises:[
       {id:'e1',name:'바벨 힙쓰러스트',sets:[{type:'워밍업'},{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
       {id:'e2',name:'레그프레스',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
-      {id:'e3',name:'레그 익스텐션',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'드롭'}]}
+      {id:'e3',name:'레그 익스텐션',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'드롭'}]},
+      {id:'e11',name:'힙 어브덕션',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e12',name:'루마니안 데드리프트',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
+      {id:'e13',name:'케이블 킥백',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]}
     ]},
     {id:'p2',name:'어깨·등 프로그램',icon:'♧',color:'c2',exercises:[
       {id:'e4',name:'랫풀다운',sets:[{type:'워킹 1'},{type:'워킹 2'},{type:'워킹 3'}]},
@@ -391,7 +398,10 @@ function renderPrograms(){
         <div class="program-meta">${p.exercises.length}가지 운동 · ${totalSets(p)}세트</div>
         <div class="program-last">최근 기록 ${lastRecordDate(p.id)||'없음'}</div>
       </div>
-      <button class="chev open-program" data-id="${p.id}" aria-label="${esc(p.name)} 운동 시작">›</button>
+      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+        <button class="chev open-program" data-id="${p.id}" aria-label="${esc(p.name)} 운동 시작">›</button>
+        <button class="edit-program" data-id="${p.id}" style="border:0;background:none;color:#667085;font-size:12px;padding:2px 4px">수정</button>
+      </div>
     </div>
   `).join('');
   root.querySelectorAll('.open-program').forEach(b=>b.addEventListener('click',()=>{
@@ -399,6 +409,7 @@ function renderPrograms(){
     document.getElementById('programSelect').value=b.dataset.id;
     renderWorkout(b.dataset.id);
   }));
+  root.querySelectorAll('.edit-program').forEach(b=>b.addEventListener('click',()=>openModal(b.dataset.id)));
 }
 
 let editProgramId=null;
@@ -421,11 +432,11 @@ function addBuilder(name='',types=['워킹 1','워킹 2','워킹 3']){
     <div class="builder-row">
       <div class="field" style="margin:0">
         <label>운동명</label>
-        <input class="b-name" value="${esc(name)}" placeholder="예: 바벨 힙쓰러스트">
+        <input class="b-name" list="exerciseSuggestions" value="${esc(name)}" placeholder="운동명을 입력 또는 선택">
       </div>
       <div class="field" style="margin:0">
         <label>세트 수</label>
-        <input class="b-count" type="number" min="1" max="10" value="${types.length}">
+        <input class="b-count" type="number" min="1" max="20" value="${types.length}">
       </div>
     </div>
     <button type="button" class="btn danger remove" style="margin-top:8px;min-height:36px;padding:6px 10px">삭제</button>
@@ -443,7 +454,7 @@ document.getElementById('saveProgram').addEventListener('click',()=>{
   const rows=[...document.querySelectorAll('.builder')];
   const exercises=rows.map(row=>{
     const n=row.querySelector('.b-name').value.trim();
-    const count=Math.max(1,Math.min(10,Number(row.querySelector('.b-count').value)||1));
+    const count=Math.max(1,Math.min(20,Number(row.querySelector('.b-count').value)||1));
     return {id:uid('e'),name:n,sets:Array.from({length:count},(_,i)=>({type:`워킹 ${i+1}`}))}
   }).filter(e=>e.name);
   if(!name||!exercises.length){alert('프로그램 이름과 운동을 1개 이상 입력해주세요.');return}
