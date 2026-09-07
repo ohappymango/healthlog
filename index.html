@@ -277,7 +277,7 @@
         <label for="programSelect">프로그램 선택</label>
         <select id="programSelect"></select>
       </div>
-      <div class="hint">최근 2회 기록을 기준으로 오늘의 운동 무게와 횟수를 입력하세요.</div>
+      <div class="hint">각 세트의 유형을 선택하고, 최근 2회 기록을 보면서 오늘의 무게와 횟수를 입력하세요.</div>
       <div id="workoutArea"></div>
       <button id="saveWorkout" class="save-btn">오늘 운동 저장</button>
     </section>
@@ -398,9 +398,10 @@ function renderPrograms(){
         <div class="program-meta">${p.exercises.length}가지 운동 · ${totalSets(p)}세트</div>
         <div class="program-last">최근 기록 ${lastRecordDate(p.id)||'없음'}</div>
       </div>
-      <div style="display:flex;flex-direction:column;gap:6px;align-items:flex-end">
+      <div style="display:flex;flex-direction:column;gap:5px;align-items:flex-end">
         <button class="chev open-program" data-id="${p.id}" aria-label="${esc(p.name)} 운동 시작">›</button>
         <button class="edit-program" data-id="${p.id}" style="border:0;background:none;color:#667085;font-size:12px;padding:2px 4px">수정</button>
+        <button class="delete-program-card" data-id="${p.id}" style="border:0;background:none;color:#dc2626;font-size:12px;padding:2px 4px">삭제</button>
       </div>
     </div>
   `).join('');
@@ -410,6 +411,15 @@ function renderPrograms(){
     renderWorkout(b.dataset.id);
   }));
   root.querySelectorAll('.edit-program').forEach(b=>b.addEventListener('click',()=>openModal(b.dataset.id)));
+  root.querySelectorAll('.delete-program-card').forEach(b=>b.addEventListener('click',()=>{
+    const pid=b.dataset.id;
+    const p=db.programs.find(x=>x.id===pid);
+    if(!p)return;
+    if(!confirm(`"${p.name}" 프로그램을 삭제할까요?\n기존 운동 기록은 기록 탭에 남습니다.`))return;
+    db.programs=db.programs.filter(x=>x.id!==pid);
+    save();
+    renderPrograms();
+  }));
 }
 
 let editProgramId=null;
@@ -514,7 +524,14 @@ function renderWorkout(programId){
               ${e.sets.map((s,si)=>{
                 const p2=setAt(recent.prev2,si),p1=setAt(recent.prev,si);
                 return `<tr>
-                  <td class="set-type">${esc(s.type)}</td>
+                  <td class="set-type">
+                    <select class="type-select" data-ei="${ei}" data-si="${si}" aria-label="${esc(e.name)} ${si+1}세트 유형"
+                      style="width:100%;min-width:0;border:1px solid #d6dbe4;border-radius:7px;background:#fff;padding:6px 1px;font-size:10px;text-align:center">
+                      <option value="워밍업" ${String(s.type).startsWith('워밍업')?'selected':''}>워밍업</option>
+                      <option value="워킹" ${String(s.type).startsWith('워킹')?'selected':''}>워킹</option>
+                      <option value="드롭" ${String(s.type).startsWith('드롭')?'selected':''}>드롭</option>
+                    </select>
+                  </td>
                   <td>${val(p2?.weight)}</td>
                   <td>${val(p1?.weight)}</td>
                   <td><input class="w-input" type="number" inputmode="decimal" step="0.5" min="0" data-ei="${ei}" data-si="${si}" placeholder="-"></td>
@@ -534,6 +551,17 @@ function renderWorkout(programId){
     body.classList.toggle('hidden');
     b.textContent=body.classList.contains('hidden')?'⌄':'⌃';
   }));
+  root.querySelectorAll('.type-select').forEach(sel=>sel.addEventListener('change',()=>{
+    const exIndex=Number(sel.dataset.ei);
+    const setIndex=Number(sel.dataset.si);
+    const ex=p.exercises[exIndex];
+    if(!ex||!ex.sets[setIndex])return;
+    const sameTypeBefore=ex.sets.slice(0,setIndex).filter(x=>String(x.type).startsWith(sel.value)).length;
+    ex.sets[setIndex].type = sel.value==='워킹' ? `워킹 ${sameTypeBefore+1}` :
+                             sel.value==='드롭' ? `드롭 ${sameTypeBefore+1}` :
+                             `워밍업 ${sameTypeBefore+1}`;
+    save();
+  }));
 }
 
 document.getElementById('saveWorkout').addEventListener('click',()=>{
@@ -545,8 +573,9 @@ document.getElementById('saveWorkout').addEventListener('click',()=>{
     sets:e.sets.map((s,si)=>{
       const w=document.querySelector(`.w-input[data-ei="${ei}"][data-si="${si}"]`);
       const r=document.querySelector(`.r-input[data-ei="${ei}"][data-si="${si}"]`);
+      const t=document.querySelector(`.type-select[data-ei="${ei}"][data-si="${si}"]`);
       return {
-        type:s.type,
+        type:t?t.value:(s.type||'워킹'),
         weight:w&&w.value!==''?Number(w.value):null,
         reps:r&&r.value!==''?Math.round(Number(r.value)):null
       }
