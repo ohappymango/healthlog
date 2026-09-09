@@ -218,6 +218,9 @@
       border:1px solid var(--line);border-radius:14px;padding:11px;margin-bottom:9px;background:#fafbfc
     }
     .builder-row{display:grid;grid-template-columns:1fr 88px;gap:8px}
+    .builder-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+    .move-btn{border:1px solid var(--line);background:#fff;color:#334155;border-radius:9px;min-height:36px;padding:6px 10px;font-size:12px;font-weight:700}
+    .move-btn:disabled{opacity:.3;cursor:default}
     .btn{
       border:0;border-radius:12px;min-height:44px;padding:9px 13px;background:var(--navy);color:#fff;font-weight:800
     }
@@ -270,16 +273,16 @@
 
     <section id="workoutPage" class="page">
       <div class="date-row">
-        <span class="label">오늘 날짜</span>
-        <strong id="todayLabel"></strong>
+        <label class="label" for="workoutDate">운동 날짜</label>
+        <input id="workoutDate" type="date" style="border:0;background:transparent;font-weight:800;font-size:15px;text-align:right;min-height:36px">
       </div>
       <div class="program-select-wrap">
         <label for="programSelect">프로그램 선택</label>
         <select id="programSelect"></select>
       </div>
-      <div class="hint">각 세트의 유형을 선택하고, 최근 2회 기록을 보면서 오늘의 무게와 횟수를 입력하세요.</div>
+      <div class="hint">운동 날짜를 선택한 뒤, 그 날짜 이전의 최근 2회 기록과 비교하면서 무게와 횟수를 입력하세요.</div>
       <div id="workoutArea"></div>
-      <button id="saveWorkout" class="save-btn">오늘 운동 저장</button>
+      <button id="saveWorkout" class="save-btn">운동 기록 저장</button>
     </section>
   </main>
 
@@ -361,7 +364,9 @@ function prettyDate(iso){
   const w=['일','월','화','수','목','금','토'][new Date(y,m-1,d).getDay()];
   return `${y}.${String(m).padStart(2,'0')}.${String(d).padStart(2,'0')} (${w})`;
 }
-document.getElementById('todayLabel').textContent=prettyDate(isoToday());
+const workoutDateInput=document.getElementById('workoutDate');
+workoutDateInput.value=isoToday();
+workoutDateInput.max=isoToday();
 
 const titles={
   home:['홈','내 운동 프로그램'],
@@ -438,6 +443,7 @@ function closeModal(){modal.classList.remove('open')}
 function addBuilder(name='',types=['워킹 1','워킹 2','워킹 3']){
   const el=document.createElement('div');
   el.className='builder';
+  el.dataset.types=JSON.stringify(types);
   el.innerHTML=`
     <div class="builder-row">
       <div class="field" style="margin:0">
@@ -449,11 +455,46 @@ function addBuilder(name='',types=['워킹 1','워킹 2','워킹 3']){
         <input class="b-count" type="number" min="1" max="20" value="${types.length}">
       </div>
     </div>
-    <button type="button" class="btn danger remove" style="margin-top:8px;min-height:36px;padding:6px 10px">삭제</button>
+    <div class="builder-actions">
+      <button type="button" class="move-btn move-up">↑ 위로</button>
+      <button type="button" class="move-btn move-down">↓ 아래로</button>
+      <button type="button" class="btn danger remove" style="min-height:36px;padding:6px 10px">삭제</button>
+    </div>
   `;
-  el.querySelector('.remove').addEventListener('click',()=>el.remove());
+
+  el.querySelector('.remove').addEventListener('click',()=>{
+    el.remove();
+    refreshMoveButtons();
+  });
+  el.querySelector('.move-up').addEventListener('click',()=>{
+    const prev=el.previousElementSibling;
+    if(prev){
+      el.parentNode.insertBefore(el,prev);
+      refreshMoveButtons();
+    }
+  });
+  el.querySelector('.move-down').addEventListener('click',()=>{
+    const next=el.nextElementSibling;
+    if(next){
+      el.parentNode.insertBefore(next,el);
+      refreshMoveButtons();
+    }
+  });
+
   document.getElementById('builders').appendChild(el);
+  refreshMoveButtons();
 }
+
+function refreshMoveButtons(){
+  const rows=[...document.querySelectorAll('#builders .builder')];
+  rows.forEach((row,i)=>{
+    const up=row.querySelector('.move-up');
+    const down=row.querySelector('.move-down');
+    if(up)up.disabled=i===0;
+    if(down)down.disabled=i===rows.length-1;
+  });
+}
+
 document.getElementById('headerAdd').addEventListener('click',()=>openModal());
 document.getElementById('newProgramBtn').addEventListener('click',()=>openModal());
 document.getElementById('cancelModal').addEventListener('click',closeModal);
@@ -461,26 +502,55 @@ document.getElementById('addExercise').addEventListener('click',()=>addBuilder()
 modal.addEventListener('click',e=>{if(e.target===modal)closeModal()});
 document.getElementById('saveProgram').addEventListener('click',()=>{
   const name=document.getElementById('programName').value.trim();
-  const rows=[...document.querySelectorAll('.builder')];
+  const rows=[...document.querySelectorAll('#builders .builder')];
   const exercises=rows.map(row=>{
     const n=row.querySelector('.b-name').value.trim();
     const count=Math.max(1,Math.min(20,Number(row.querySelector('.b-count').value)||1));
-    return {id:uid('e'),name:n,sets:Array.from({length:count},(_,i)=>({type:`워킹 ${i+1}`}))}
+
+    let oldTypes=[];
+    try{oldTypes=JSON.parse(row.dataset.types||'[]')}catch(e){oldTypes=[]}
+
+    const sets=Array.from({length:count},(_,i)=>({
+      type:oldTypes[i] || `워킹 ${i+1}`
+    }));
+
+    return {id:uid('e'),name:n,sets};
   }).filter(e=>e.name);
-  if(!name||!exercises.length){alert('프로그램 이름과 운동을 1개 이상 입력해주세요.');return}
+
+  if(!name||!exercises.length){
+    alert('프로그램 이름과 운동을 1개 이상 입력해주세요.');
+    return;
+  }
+
   if(editProgramId){
     const p=db.programs.find(x=>x.id===editProgramId);
-    p.name=name;p.exercises=exercises;
+    p.name=name;
+    p.exercises=exercises;
   }else{
     const colors=['c1','c2','c3','c4'];
     const icons=['◒','♧','◫','★'];
-    db.programs.push({id:uid('p'),name,color:colors[db.programs.length%4],icon:icons[db.programs.length%4],exercises});
+    db.programs.push({
+      id:uid('p'),
+      name,
+      color:colors[db.programs.length%4],
+      icon:icons[db.programs.length%4],
+      exercises
+    });
   }
-  save();closeModal();renderPrograms();
+
+  save();
+  closeModal();
+  renderPrograms();
 });
 
-function recentExerciseRecords(programId,exerciseName){
-  const recs=db.records.filter(r=>r.programId===programId).sort((a,b)=>b.savedAt.localeCompare(a.savedAt));
+function recentExerciseRecords(programId,exerciseName,beforeDate){
+  const recs=db.records
+    .filter(r=>r.programId===programId && (!beforeDate || r.date<beforeDate))
+    .sort((a,b)=>{
+      const byDate=b.date.localeCompare(a.date);
+      return byDate!==0 ? byDate : b.savedAt.localeCompare(a.savedAt);
+    });
+
   const found=[];
   for(const r of recs){
     const e=r.exercises.find(x=>x.name===exerciseName);
@@ -500,6 +570,11 @@ function renderWorkoutTab(){
   renderWorkout(id);
 }
 document.getElementById('programSelect').addEventListener('change',e=>renderWorkout(e.target.value));
+workoutDateInput.addEventListener('change',()=>{
+  if(!workoutDateInput.value)workoutDateInput.value=isoToday();
+  if(workoutDateInput.value>isoToday())workoutDateInput.value=isoToday();
+  renderWorkout(document.getElementById('programSelect').value);
+});
 
 function renderWorkout(programId){
   const p=db.programs.find(x=>x.id===programId);
@@ -508,7 +583,7 @@ function renderWorkout(programId){
   root.innerHTML=`
     <div class="summary">총 ${p.exercises.length}가지 운동 · ${totalSets(p)}세트</div>
     ${p.exercises.map((e,ei)=>{
-      const recent=recentExerciseRecords(programId,e.name);
+      const recent=recentExerciseRecords(programId,e.name,workoutDateInput.value||isoToday());
       return `<div class="exercise-box">
         <div class="exercise-title">
           <h3>${ei+1}. ${esc(e.name)}</h3>
@@ -568,6 +643,13 @@ document.getElementById('saveWorkout').addEventListener('click',()=>{
   const programId=document.getElementById('programSelect').value;
   const p=db.programs.find(x=>x.id===programId);
   if(!p)return;
+
+  let recordDate=workoutDateInput.value||isoToday();
+  if(recordDate>isoToday()){
+    alert('미래 날짜에는 운동 기록을 저장할 수 없습니다.');
+    return;
+  }
+
   const exercises=p.exercises.map((e,ei)=>({
     name:e.name,
     sets:e.sets.map((s,si)=>{
@@ -578,22 +660,31 @@ document.getElementById('saveWorkout').addEventListener('click',()=>{
         type:t?t.value:(s.type||'워킹'),
         weight:w&&w.value!==''?Number(w.value):null,
         reps:r&&r.value!==''?Math.round(Number(r.value)):null
-      }
+      };
     })
   }));
+
   if(!exercises.some(e=>e.sets.some(s=>s.weight!==null||s.reps!==null))){
-    alert('오늘 운동 기록을 하나 이상 입력해주세요.');return;
+    alert('운동 기록을 하나 이상 입력해주세요.');
+    return;
   }
+
   db.records.push({
     id:uid('r'),
-    date:isoToday(),
+    date:recordDate,
     savedAt:new Date().toISOString(),
     programId:p.id,
     programName:p.name,
     exercises
   });
+
   save();
-  alert('오늘 운동 기록을 저장했습니다.');
+  alert(`${prettyDate(recordDate)} 운동 기록을 저장했습니다.`);
+  selectedDate=recordDate;
+
+  const [yy,mm]=recordDate.split('-').map(Number);
+  calCursor=new Date(yy,mm-1,1);
+
   renderWorkout(programId);
 });
 
